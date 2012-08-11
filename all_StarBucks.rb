@@ -169,5 +169,5 @@ def one_list_StarBucks(pref_code, pageID)
 	if validListP(body) then print parse_listpage(body)	end
 end
 
-all_star_bucks("StarBucks_All_____.csv")
+all_star_bucks("StarBucks_All.csv")
 
