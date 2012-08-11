@@ -15,6 +15,13 @@ Starbucks_Japan
 ## 能書きはいいから、結果を早く ##
 添付しているCSVファイルがそれです。エンコーディングはUTF-8です。また、僕はCSVが好きですが、CSVファイルがわからない人のために、Excel形式に変換したものも(.xlsxのファイル)添付しています。それぞれ東京都版、神奈川県版、全国版の３種類があります。
 
+
+こちらからもDLできます。
+
+* [全国版](http://www19.atpages.jp/~dashboard/starbucks/Starbucks_All.xlsx "全国版")
+* [東京都](http://www19.atpages.jp/~dashboard/starbucks/Starbucks_Tokyo.xlsx "東京都")
+* [神奈川県](http://www19.atpages.jp/~dashboard/starbucks/Starbucks_Kanagawa.xlsx "神奈川県")
+
 ## ありそうな質問 ##
 ##### プログラムを実行したい。 #####
 Linux, Mac OS Xの方は、コマンドラインをたちあげて
