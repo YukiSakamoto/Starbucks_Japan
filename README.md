@@ -43,4 +43,4 @@ Linux, Mac OS Xの方は、コマンドラインをたちあげて
 
 
 
-This Ruby-script scrapes Japanese Starbucks webpage. So, I didn't prepare the document written in English, sorry.
+This Ruby-script scrapes Japanese Starbucks websites. So, I didn't prepare the document written in English, sorry.
