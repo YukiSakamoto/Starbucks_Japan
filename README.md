@@ -43,10 +43,13 @@ Linux, Mac OS Xの方は、コマンドラインをたちあげて
 
 ##### 部分的に情報が取れてないよ #####
 今の特に日付取得部分とかはよくあるパターンをマッチさせてるだけなので、パーサーと言えたようなものじゃないです。
+
 横浜元町店
+
 **月～日： 07:30～22:00
 **祝： 08:30～22:00
 **定休日： 不定休
+
 がうまく拾えてないのを確認しています。今度直します。
 
 This Ruby-script scrapes Japanese Starbucks websites. So, I didn't prepare the document written in English, sorry.
