@@ -52,4 +52,7 @@ Linux, Mac OS Xの方は、コマンドラインをたちあげて
 
 がうまく拾えてないのを確認しています。今度直します。
 
+##### 20120825追記 #####
+このスクリプトはruby1.8.7の上で実行しています。ruby1.9では文字コードの関係でこのままでは動かないみたいです。
+
 This Ruby-script scrapes Japanese Starbucks websites. So, I didn't prepare the document written in English, sorry.
