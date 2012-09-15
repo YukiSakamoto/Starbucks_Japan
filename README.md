@@ -18,7 +18,7 @@ Starbucks_Japan
 
 こちらからもDLできます。
 
-* [全国版](http://www19.atpages.jp/~dashboard/starbucks/Starbucks_All.xlsx "全国版")
+* [全国版](https://github.com/YukiSakamoto/Starbucks_Japan/raw/master/outputs/Starbucks_All.xlsx "全国版")
 * [東京都](http://www19.atpages.jp/~dashboard/starbucks/Starbucks_Tokyo.xlsx "東京都")
 * [神奈川県](http://www19.atpages.jp/~dashboard/starbucks/Starbucks_Kanagawa.xlsx "神奈川県")
 
