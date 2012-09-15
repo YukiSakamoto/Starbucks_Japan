@@ -1,8 +1,8 @@
 #!/usr/bin/ruby -Ku
+# -*- encoding: utf-8 -*-
 require 'kconv'
 require 'open-uri'
 require 'csv'
-
 $print_header = true
 
 def remove_space(str)
