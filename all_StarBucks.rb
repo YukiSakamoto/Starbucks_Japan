@@ -1,4 +1,3 @@
-#!/usr/bin/ruby -Ku
 # -*- encoding: utf-8 -*-
 require 'kconv'
 require 'open-uri'
@@ -73,31 +72,29 @@ end
 
 #そのリストのページのリストは有効かどうか
 def validListP(body)
-	#	1</span>-<span class="fwB">10</span>件
 	content = body
 	pattern = %r{<span\s+class=.*?>(\d+)</span>-<span\s+class=.*?>(\d+)</span>}
 	if content =~ pattern
 		start = $1.to_i
 		finish= $2.to_i
-		if start <= finish
-			return true
-		else
-			return false
+		if start <= finish then return true
+		else return false
 		end
 	else
 		return false
 	end
 end
 
-#ListPattern = %r{<td\s+class="storeName"><a\shref="/store/search/detail\.php\?id=(\d+)&search_condition=.*?&pref_code=(\d+)&pageID=(\d+)">(.*?)</a><br>\s?<span\s+>class="fontS">\s?\((.*?)\)\s?</span> }
 ListPattern = %r{<td\s+class="storeName"><a\shref="/store/search/detail\.php\?id=(\d+)&search_condition=.*?&pref_code=(\d+)&pageID=(\d+)">(.*?)</a>}
 PlacePattern = %r{<span\s+class=".*?">\s?（(.*?)）\s?</span>}
 BisHourPattern = %r{<td\s+class="vaT">\s+(.*?)</td>\s+<td class="vaT">\s+(.*?)</td>\s+</tr>}m
 TelephonePattern=%r{<td\s+class="telephone\s+txtAC">(.*?)</td>}
 SeatsPattern= 	%r{<td\s+class="seats\s+txtAC">(\d*)</td>}
 
+
 #店舗一覧から情報を取得する
 def parse_listpage(content)
+	content.force_encoding("utf-8")
 	one_page = Array.new
 	pos = 0
 	while	pos = content.index(ListPattern, pos + 1)	# 店名, ID
@@ -119,10 +116,8 @@ def parse_listpage(content)
 		pos = content.index(TelephonePattern, pos + 1)
 		data << Regexp.last_match[1]
 
-		if  content.index(SeatsPattern, pos+1)
-			data << $1
-		else
-			data << ""
+		if  content.index(SeatsPattern, pos+1) then data << $1
+		else	data << ""
 		end
 		data << "http://www.starbucks.co.jp/store/search/detail.php?id=#{id}"
 		one_page << data
@@ -132,7 +127,6 @@ end
 
 def all_star_bucks(outputpath = nil)
 	csv = outputpath ? CSV.open(outputpath, "w") : nil
-
 	#pref_code = 13	#Tokyo
 	csv << ["id", "店名", "地区",  "月〜木", "金", "土", "日", "電話番号", "座席数", "URL"]	if $print_header == true && csv
 
@@ -163,11 +157,10 @@ end
 
 # For Debugging
 def one_list_StarBucks(pref_code, pageID)
-	# search_by_address_flgを立たせたほうがいいんかな
 	page = open("http://www.starbucks.co.jp/store/search/result_store.php?free_word=&search_type=1&pref_code=#{pref_code}&city=&search_by_address_flg=1&x=60&y=22&store_type_3=&pageID=#{pageID}")
 	body = page.read
 	if validListP(body) then print parse_listpage(body)	end
 end
 
-all_star_bucks("StarBucks_All.csv")
+all_star_bucks("0StarBucks_All.csv")
 
