@@ -203,7 +203,7 @@ pref_id_dict = {
         }
 
 #============================================================
-prefid = 47
+prefid = 32
 filename = "%s.csv" % pref_id_dict[prefid]
 print_header = True
 #============================================================
@@ -213,8 +213,9 @@ import csv
 f = open(filename, 'w')
 writer = csv.writer(f)
 columns = ['id', 'name','region','weekday', 'friday', 'saturday', 'sunday', 'tel', 'seats', 'lan' ]
+header  = ['id', '店名','地域','月〜木', '金', '土', '日', 'Tel', 'Seats', '無線Lanサービス' ]
 if print_header:
-    writer.writerow(columns)
+    writer.writerow(header)
 for i in store_list:
     writer.writerow(i.as_record(columns))
 f.close()
