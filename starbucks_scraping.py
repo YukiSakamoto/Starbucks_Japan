@@ -193,7 +193,7 @@ def scraping_per_prefecture(prefcode, survey_detail = True, verbose = True):
 
 pref_id_dict = { 
         1: "Hokkaido",  2: "Aomori",    3: "Iwate",     4: "Miyagi",    5: "Akita", 6: "Yamagata",  7: "Fukushima",
-        8: "Tokyo",     9: "Ibaraki",   10:"Gunnma",    11:"Saitama",   12:"Chiba", 13:"Tokyo",     14:"Kanagawa",
+        8: "Tokyo",     9: "Ibaraki",   10:"Gumma",    11:"Saitama",   12:"Chiba", 13:"Tokyo",     14:"Kanagawa",
         15:"Niigata",   16:"Toyama",    17:"Ishikawa",  18:"Fukui",     19:"Yamanashi", 20: "Nagano",  
         21:"Gifu",      22:"Sizuoka",   23:"Aichi",     24:"Mie",   
         25:"Shiga",     26:"Kyoto",     27:"Osaka",     28:"Hyogo",     29:"Nara",  30:"Wakayama",
