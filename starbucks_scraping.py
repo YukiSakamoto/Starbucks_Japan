@@ -198,11 +198,11 @@ def load_or_fetch_storedetail(storeid, directory, load = True, save = True):
         return detail_html
 
 
-def survey_prefecture(prefid, savedir, load = True, save = True):
-    storelist_html = load_or_fetch_storelist(prefid, savedir, load, save)
+def survey_prefecture(prefid, savedir, list_load = False, list_save = True, store_load = True, store_save = True):
+    storelist_html = load_or_fetch_storelist(prefid, savedir, list_load, list_save)
     data = scraping_prefecture(storelist_html)
     for i in data:
-        detail_html = load_or_fetch_storedetail(i['id'], savedir, True, True)
+        detail_html = load_or_fetch_storedetail(i['id'], savedir, store_load, store_save)
         i.update( parse_detailpage(detail_html) )
     return data
 
