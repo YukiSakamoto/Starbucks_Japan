@@ -219,6 +219,7 @@ print "Scraping Donw. Next, write as CSV"
 
 f = open(filename, 'w')
 writer = csv.writer(f)
+writer.writerow(['店名', 'id', '月曜日〜木曜日開店時間', '金曜日開店時間', '土曜日開店時間', '日曜日開店時間', '電話番号', '無線LAN'] )
 for i in data:
     writer.writerow(as_record(['store', 'id', 'openhour', 'telnum', 'lan'],  i ) )
 f.close()
