@@ -1,195 +1,155 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-#XXX
-# To use, see the bottom of this code"
 
 import urllib2
 import lxml.html
 import re
 
-class Store:
-    def __init__(self, store_id):
-        self.__id = store_id
-        self.__details = dict()
-    def __setitem__(self, name, value):
-        self.__details[name] = value
-    def __getitem__(self, name):
-        if name == 'id':
-            return self.__id
-        #elif name not in self.__details:
-        #    return u""
-        else:
-            return self.__details[name]
-    def __str__(self):
-        retval = "id: %3d, name: %s" % (self['id'], self['name'])
-        return retval
-    def as_record(self, keys):
-        retval = list()
-        for k in keys:
-            s = u""
-            if k == 'id':
-                s = u"%d" % self.__id
-            elif k not in self.__details:
-                # Guard
-                s = u""
-            elif k == 'lan':
-                if self['has_lan_service'] is False:
-                    s = u"None"
-                else:
-                    # Enum wireless lan services
-                    fst = True
-                    for lan_name in self['lan']:
-                        if fst == True:
-                            fst = False
-                        else:
-                            s += u"/ "
-                        tmp = u"%s" % lan_name
-                        s += tmp
-            else:
-                s = u"%s" %self[k]
-            retval.append( s.encode('utf_8') )
-        return retval
+import sys
+import codecs
 
-def parse_bzhour(desc, data):
-    base = desc.strip().replace(" ", "")
-    if len(base) == 0:
-        return
-    #print base
-    record = base.split(u"：")
-    if len(record) == 2:
-        if record[0] == u"定休日":
-            if record[1] == u"不定休":
-                pass
-            else:
-                if re.search(u"土", record[1]):
-                    data['saturday'] = "None"
-                if re.search(u"日", record[1]):
-                    data['sunday'] = "None"
-                if re.search(u"金", record[1]):
-                    data['friday'] = "None"
-        else:
-            if record[0] == u"月～木":
-                data['weekday'] = record[1]
-            elif record[0] == u"月～金":
-                data['weekday'] = record[1]
-                data['friday'] = record[1]
-            elif record[0] == u"月～土":
-                data['weekday'] = record[1]
-                data['friday'] = record[1]
-                data['saturday'] = record[1]
-            else:
-                if re.search(u"土", record[0]):
-                    data['saturday'] = record[1]
-                if re.search(u"日", record[0]):
-                    data['sunday'] = record[1]
-                if re.search(u"金", record[0]):
-                    data['friday'] = record[1]
-    elif len(record) == 1:
-        data['weekday'] = record[0]
-        data['friday'] = record[0]
-        data['saturday'] = record[0]
-        data['sunday'] = record[0]
-    else:
+import csv
+import os.path
+
+def create_storedetail_filepath(storeid, directory):
+    return "%s/store_%d.html" % (directory, storeid)
+
+def create_storelist_filepath(prefid, directory):
+    return "%s/list_%d.html" % (directory, prefid)
+
+def fetch_detailpage(storeid):
+    storeurl = "http://www.starbucks.co.jp/store/search/detail.php?id=%d" % storeid
+    html = urllib2.urlopen(storeurl).read()
+    return html
+
+def parse_bzhour(text_contents):
+    weekday = ""
+    friday  = ""
+    saturday= ""
+    sunday  = ""
+    cannot_parse = ""
+    if len(text_contents) == 0:
         pass
+    else:
+        for i in text_contents:
+            record = i.split(u"：")
+            if len(record) == 1:
+                weekday = friday = saturday = sunday = record[0].encode('utf-8')
+            elif len(record) == 2:
+                record[1] = record[1].replace('\r', '')
+                if record[0] == u"月～木":
+                    weekday = record[1].encode('utf-8')
+                elif record[0] == u"月～金":
+                    weekday = friday = record[1].encode('utf-8')
+                elif record[0] == u"日祝" or record[0] == u"祝日":
+                    sunday = record[1].encode('utf-8')
+                elif record[0] == u"月～土":
+                    saturday = friday = weekday = record[1].encode('utf-8')
+                elif record[0] == u"金":
+                    friday = record[1].encode('utf-8')
+                elif record[0] == u"土":
+                    saturday = record[1].encode('utf-8')
+                elif record[0] == u"金土":
+                    saturday = friday = record[1].encode('utf-8')
+                elif record[0] == u"土日祝":
+                    sunday = saturday = record[1].encode('utf-8')
+                elif record[0] == u"金土日祝":
+                    sunday = saturday = friday = record[1].encode('utf-8')
+                else:
+                    cannot_parse = i
+            else:
+                print "many record"
+                for i in record:
+                    print i.encode('utf-8')
+    return {'weekday' : weekday, 'friday': friday, 'saturday': saturday, 'sunday': sunday, 'unknown_openhour' : cannot_parse}
 
-def parse_listpage(pref_code, pageId):
-    def extract_storeid(url):
-        match = re.search(
-                r'/store/search/detail.php\?id=(\d*)&search_condition',
-                str(url) )  
-        if match is None:
-            return None
-        else:
-            return int(match.group(1))
+def parse_detailpage(detailpage_raw_data):
+    #detailpage_raw_data = fetch_detailpage(storeid)
+    root = lxml.html.fromstring(detailpage_raw_data)
+    retval = dict()
 
-    datas = list()
-    url = "http://www.starbucks.co.jp/store/search/result_store.php?pref_code=%d&pageID=%d" % (pref_code, pageId)
+    detailinfotable = root.xpath('//table[@class="storeInfo"]/tr')
+    for row in detailinfotable:
+        item = row.xpath('./td[@class="item"]/text()')[0]
+        detail = row.xpath('./td[@class="detail"]')
+        if item == u"定休日":
+            retval["closeday"] = detail[0].text.strip().encode('utf-8')
+        elif item == u"電話番号":
+            retval["telnum"] = detail[0].text.strip().encode('utf-8')
+        elif item == u"無線LAN":
+            available_services = detail[0].xpath('ul[@class="lan"]/li')
+            retval["lan"] = []
+            for service in available_services:
+                retval["lan"].append(service[0].attrib['alt'].encode('utf-8') )
+        elif item == u"営業時間":
+            #import ipdb; ipdb.set_trace()
+            #print detail[0].text.encode('utf-8')
+            text_contents =  detail[0].text_content().strip().replace(u"　",u"").replace(u" ", u"").split(u"\n")
+            #for i in  text_contents:
+            #    print i.encode('utf-8')
+            retval.update( parse_bzhour(text_contents) )
+            #print "-------------------------------------------------------------"
+
+    return retval
+
+
+def extract_storeid(url):
+    match = re.search(r'id=(\d*)', str(url) )
+    if match is None:
+        return None
+    else:
+        return int(match.group(1))
+
+def fetch_listpage(prefcode):
+    url = 'http://www.starbucks.co.jp/store/search/result.php?search_type=1&pref_code=%d' % prefcode
     html = urllib2.urlopen(url).read()
-    root = lxml.html.fromstring(html)
-    searchResult = root.xpath('//p[@class="searchResultTxt"]/span[@class="fwB"]/text()')
-    
-    if len(searchResult) == 0:  # Error check for the prefecture where no store exists.
-        return list()
-    (start, end) = ( int(searchResult[1]), int(searchResult[2]))
-    if end < start:
-        return list()
+    return html
 
-    table = root.xpath('//table[@class="table"]/tbody/tr')
-    for row in table:
-        store = row.xpath('./td[@class="storeName"]/a')
-        store_name = row.xpath('./td[@class="storeName"]/a/text()')
-        region = row.xpath('./td[@class="storeName"]/span/text()')
-        tel  = row.xpath('./td[@class="telephone txtAC"]/text()')
-        seats= row.xpath('./td[@class="seats txtAC"]/text()')
-        has_lan_service = row.xpath('./td[@class="wirelessHotspot txtAC"]/text()')
-        business_hour = row.xpath('./td[@class="businessHours"]/table[@class="timeTable"]/tr/td[@class="vaT"]/text()')
-
-        data = Store(extract_storeid(store[0].attrib['href']))
-        data['name'] = store_name[0]
-        data['region'] = region[0].rstrip(u")）").lstrip(u"(（")
-        data['tel']  = tel[0]
-        data['seats']= seats[0]
-        #import ipdb; ipdb.set_trace()
-        if re.search(u"〇", has_lan_service[0]):
-            data['has_lan_service'] = True
-        else:
-            data['has_lan_service'] = False
-
-        #print "======================================================="
-        #print data['name']
-        #print data['has_lan_service']
-
-        for bz in business_hour:
-            parse_bzhour(bz, data)
-        #print "Weekday  : %s "% data['weekday']
-        #print "Friday   : %s" % data['friday']
-        #print "Saturday : %s" % data['saturday']
-        #print "Sunday   : %s" % data['sunday']
-        datas.append(data)
-
-    return datas
-
-def parse_storedetail(store_data):
-    store_id = store_data['id']
-    url = 'http://www.starbucks.co.jp/store/search/detail.php?id=%d' % store_id
-    html = urllib2.urlopen(url).read()
-    root = lxml.html.fromstring(html)
-    detail_table = root.xpath('//table[@class="table mapTable"]/tr')
-    for row in detail_table:
-        label = row.xpath('./th/text()')[0]
-        if label == u"住所":
-            pass
-            #value = row.xpath('./td/text()')
-            #print value[0], value[1]
-        elif label == u"電話番号":
-            pass
-            #value = row.xpath('./td/text()')[0]
-            #print value[0]
-        elif label == u"無線LAN":
-            values = row.xpath('./td/span[@class="lanService"]/img')
-            lan_names = list()
-            for val in values:
-                lan_names.append( val.attrib['alt'] )
-            store_data['lan'] = lan_names
-
-def scraping_per_prefecture(prefcode, survey_detail = True, verbose = True):
+def scraping_prefecture(listpage_raw_data, verbose = True):
     store_list = list()
     i = 1
-    while True:
-        a_listpage = parse_listpage(prefcode, i)
-        if len(a_listpage) == 0:
-            break
-        else:
-            store_list.extend(a_listpage)
-        i += 1
+    #listpage_raw_data = fetch_listpage(prefcode)
+    root = lxml.html.fromstring(listpage_raw_data)
+    searchResult = root.xpath('//div[@class="detailContainer"]')
+    for storedata in searchResult:
+        store_data = dict()
 
-    if survey_detail:
-        for index, store in enumerate(store_list):
-            if verbose:
-                print u"%s  (%d / %d)" % (store['name'], index + 1, len(store_list))
-            parse_storedetail(store)
-        #ok, parse done
+        storeurl = storedata.xpath('./div[@class="detailInfo"]/div[@class="storeSearchButtons"]/p[@class="searchButtonDetail"]/a')[0].attrib['href']
+        store = storedata.xpath('./p[@class="storeName"]')[0].text
+        address = storedata.xpath('./p[@class="storeAddress"]')[0].text
+
+        store_data['id'] = extract_storeid(storeurl)
+        store_data['store'] = store.encode('utf-8')
+        store_data['address'] = address.encode('utf-8')
+        store_list.append(store_data)
     return store_list
+
+
+def as_record(keys, store_data):
+    retval = []
+    for k in keys:
+        if store_data.has_key(k):
+            if k == 'lan':
+                s = ""
+                fst = True
+                for i in store_data['lan']:
+                    if fst == True:
+                        s += i
+                        fst = False
+                    else:
+                        s += ", %s" % i
+                retval.append( s )
+            else:
+                retval.append( store_data[k] )
+        elif k == 'openhour':
+            if store_data.has_key('weekday') and store_data.has_key('friday') and store_data.has_key('saturday') and store_data.has_key('sunday'):
+                    retval.append(store_data['weekday'])
+                    retval.append(store_data['friday'])
+                    retval.append(store_data['saturday'])
+                    retval.append(store_data['sunday'])
+        else:
+            retval.append("")
+    return retval;
 
 pref_id_dict = { 
         1: "Hokkaido",  2: "Aomori",    3: "Iwate",     4: "Miyagi",    5: "Akita", 6: "Yamagata",  7: "Fukushima",
@@ -202,20 +162,63 @@ pref_id_dict = {
         40:"Fukuoka",   41:"Saga",      42:"Nagasaki",  43:"Kumamoto",  44:"Oita",  45:"Miyazaki",  46:"Kagoshima", 47:"Okinawa"
         }
 
-#============================================================
-prefid = 32
-filename = "%s.csv" % pref_id_dict[prefid]
-print_header = True
-#============================================================
 
-store_list = scraping_per_prefecture(prefid, True, True)
-import csv
+prefid = 13 # Tokyo
+savedir = "starbucks"
+
+
+def load_or_fetch_storelist(prefid, directory, load = True, save = True) :
+    listfilepath = create_storelist_filepath(prefid, directory)
+    if load == True and os.path.exists(listfilepath):
+        f = open(listfilepath, 'r')
+        storelist_html = f.read()
+        f.close()
+        return storelist_html
+    else:
+        storelist_html = fetch_listpage(prefid)
+        if save == True:
+            f = open(listfilepath, 'w')
+            f.write(storelist_html)
+            f.close()
+        return storelist_html
+
+def load_or_fetch_storedetail(storeid, directory, load = True, save = True):
+    detailfilepath = create_storedetail_filepath(storeid, directory)
+    if load == True and os.path.exists(detailfilepath):
+        f = open(detailfilepath, 'r')
+        detail_html = f.read()
+        f.close()
+        return detail_html
+    else:
+        detail_html = fetch_detailpage(storeid)
+        if save == True:
+            f = open(detailfilepath, 'w')
+            f.write(detail_html)
+            f.close()
+        return detail_html
+
+
+def survey_prefecture(prefid, savedir, load = True, save = True):
+    storelist_html = load_or_fetch_storelist(prefid, savedir, load, save)
+    data = scraping_prefecture(storelist_html)
+    for i in data:
+        detail_html = load_or_fetch_storedetail(i['id'], savedir, True, True)
+        i.update( parse_detailpage(detail_html) )
+    return data
+
+filename = "AllJapan.csv"
+data = []
+for i in range(1,48):
+    print "%s"% pref_id_dict[i]
+    previous_length = len(data)
+    data += survey_prefecture(i, savedir)
+    print "%s: %d stores Done." % (pref_id_dict[i], len(data) - previous_length)
+
+print "Scraping Donw. Next, write as CSV"
+
+
 f = open(filename, 'w')
 writer = csv.writer(f)
-columns = ['id', 'name','region','weekday', 'friday', 'saturday', 'sunday', 'tel', 'seats', 'lan' ]
-header  = ['id', '店名','地域','月〜木', '金', '土', '日', 'Tel', 'Seats', '無線Lanサービス' ]
-if print_header:
-    writer.writerow(header)
-for i in store_list:
-    writer.writerow(i.as_record(columns))
+for i in data:
+    writer.writerow(as_record(['store', 'id', 'openhour', 'telnum', 'lan'],  i ) )
 f.close()
