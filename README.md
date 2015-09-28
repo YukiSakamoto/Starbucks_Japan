@@ -4,67 +4,80 @@ Starbucks_Japan
 ## これはなに？ ##
 スターバックスの店舗情報を公式サイトからスクレイピングしてくるプログラムです。
 以前はRubyで書いていましたが、この度、Pythonでlxmlというhtml, xmlをパースしてくれるライブラリを用いて書き直しました。
-
-
-## 他に同じ事やってる人いるんじゃない？ ##
-僕もそう思います。しかし、全店舗表っぽいものはネット上でもあったのですが、結構前に閉店した地元のスタバが載っていたりと、新しい情報のようには感じなかったので、それなら作ろうと思ってやった次第です。もしいいのがあれば教えて欲しいです。
 　
-## 結果は ##
-outputsディレクトリに幾つかの県のお店リストを載せています。そこに無い県のリストが欲しい場合は、以下に示す方法で実行して自分で作ってください。
-プルリクエストもらえると助かります。outputsディレクトリに追加して行きます。
+## いいから店舗のリストを ##
+このディレクトリにあるcsvファイルを見てください。
 
 ## ありそうな質問 ##
 ##### プログラムを実行したい。 #####
 
 Linux, Mac OS Xの方
 
-ライブラリとして、lxmlが必要です。
+処理系としてPython2.7, ライブラリとして、lxmlが必要です。lxmlは、
 
 	$> pip install lxml
 	
-でインストールしてください。もしこれしたときにpipがないっておこられたら
+でインストールしてください。もしpipがないとエラーが出た場合は、
 
 	$> easy_install pip
 	
-をした上で上記のpip install lxmlをもう一度。いずれもPermission deniedでおこられたらsudoをするのを忘れずに。
+をした上で上記のpip install lxmlをもう一度。いずれもPermission deniedとなった場合は、sudoをするのを忘れずに。
 
 ライブラリのインストールが完了したら、スクレイピングの実行は
 
 	$> python starbucks_scraping.py
 
-と叩くだけでOKです。なお、Python2.7でしか確認していません。
+と叩くだけでOKです。Python2.7でしか確認していません。
 
-スクレイピングする県の選択はスクリプトの下の方、
+パラメータに関して述べます。
+プログラムの上部に以下のような記述があります。ここがパラメータの設定部分です。
 
 ```PYTHON
-pref_id_dict = {
+pref_id_dict = { 
         1: "Hokkaido",  2: "Aomori",    3: "Iwate",     4: "Miyagi",    5: "Akita", 6: "Yamagata",  7: "Fukushima",
-        8: "Tokyo",     9: "Ibaraki",   10:"Gunnma",    11:"Saitama",   12:"Chiba", 13:"Tokyo",     14:"Kanagawa",
-        15:"Niigata",   16:"Toyama",    17:"Ishikawa",  18:"Fukui",     19:"Yamanashi", 20: "Nagano",
-        21:"Gifu",      22:"Sizuoka",   23:"Aichi",     24:"Mie",
+        8: "Tochigi",   9: "Ibaraki",   10:"Gumma",    11:"Saitama",    12:"Chiba", 13:"Tokyo",     14:"Kanagawa",
+        15:"Niigata",   16:"Toyama",    17:"Ishikawa",  18:"Fukui",     19:"Yamanashi", 20: "Nagano",  
+        21:"Gifu",      22:"Sizuoka",   23:"Aichi",     24:"Mie",   
         25:"Shiga",     26:"Kyoto",     27:"Osaka",     28:"Hyogo",     29:"Nara",  30:"Wakayama",
         31:"Tottori",   32:"Shimane",   33:"Okayama",   34:"Hiroshima", 35:"Yamaguchi",
-        36:"Tokushima", 37:"Kagawa",    38:"Ehime",     39:"Kochi",
+        36:"Tokushima", 37:"Kagawa",    38:"Ehime",     39:"Kochi",     
         40:"Fukuoka",   41:"Saga",      42:"Nagasaki",  43:"Kumamoto",  44:"Oita",  45:"Miyazaki",  46:"Kagoshima", 47:"Okinawa"
         }
 
 #============================================================
-prefid = 47	# <- _ここを変える_ 
-filename = "%s.csv" % pref_id_dist[prefid]
-print_header = True
+# Parameters
+
+#cache
+load_list_cache = False
+save_list_cache = False
+load_storedetail_cache = True
+save_storedetail_cache = True
+savedir = "starbucks"
+
+# list that contains the numbers of prefectures to survey
+region  = range(1, 48)
+
+# output filename
+filename = "20150928.csv"
+
+# Progress Output
+verbose = False
 #============================================================
 ```
 
 pref_id_dictでハードコードされている番号と都道府県名の対応を元に、
-prefidにわたす番号を変えてから実行してください。
+regionには、探索を実行する都道府県の番号をlist形式で渡してください。
 
-Windowsの方はテストできてないので、実行の仕方はお任せします。
+cache関係のパラメータは、各都道府県の店舗リストに関してはキャッシュせずに、各店舗頁のみキャッシュすることをお勧めします。
+なお、全店舗キャッシュすると40MB弱の容量になりました。
 
-また、走らせ始めると、しばらくは終了しません。スターバックスのウェブサイトに何十（百）回もアクセスします。そうすると少なからずスターバックスのサーバーの捌けるトラフィックの一部を奪ってしまうことは容易に想像できます。とくに面白いプログラムではないので、むやみやたらな実行は極力避けましょう。
+filenameが、出力するcsvファイルの名前です。
 
+走らせ始めると、しばらくは終了しません。スターバックスのウェブサイトに何百回もアクセスします。そうすると少なからずスターバックスのサーバーの捌けるトラフィックの一部を奪ってしまうことは容易に想像できます。とくに面白いプログラムではないので、むやみやたらな実行は極力避けましょう。
+また利用する場合は先にも書いた通り、キャッシュを利用してください。
 	 
 ##### 実行してみたんだけど、情報が取れない #####
-スタバのサイトがこのスクリプトを書いた時(2014/09頃)のものとは変わったのかもしれません。
+スタバのサイトがこのスクリプトを書いた時(2015/09頃)のものとは変わったのかもしれません。
 プログラムの性質上、公式サイトのHTML構造に依存するので、どうしようもないです。
 
 

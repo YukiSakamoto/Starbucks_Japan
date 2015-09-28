@@ -11,6 +11,41 @@ import codecs
 import csv
 import os.path
 
+pref_id_dict = { 
+        1: "Hokkaido",  2: "Aomori",    3: "Iwate",     4: "Miyagi",    5: "Akita", 6: "Yamagata",  7: "Fukushima",
+        8: "Tochigi",   9: "Ibaraki",   10:"Gumma",    11:"Saitama",    12:"Chiba", 13:"Tokyo",     14:"Kanagawa",
+        15:"Niigata",   16:"Toyama",    17:"Ishikawa",  18:"Fukui",     19:"Yamanashi", 20: "Nagano",  
+        21:"Gifu",      22:"Sizuoka",   23:"Aichi",     24:"Mie",   
+        25:"Shiga",     26:"Kyoto",     27:"Osaka",     28:"Hyogo",     29:"Nara",  30:"Wakayama",
+        31:"Tottori",   32:"Shimane",   33:"Okayama",   34:"Hiroshima", 35:"Yamaguchi",
+        36:"Tokushima", 37:"Kagawa",    38:"Ehime",     39:"Kochi",     
+        40:"Fukuoka",   41:"Saga",      42:"Nagasaki",  43:"Kumamoto",  44:"Oita",  45:"Miyazaki",  46:"Kagoshima", 47:"Okinawa"
+        }
+
+#============================================================
+# Parameters
+
+#cache
+load_list_cache = False
+save_list_cache = False
+load_storedetail_cache = True
+save_storedetail_cache = True
+savedir = "starbucks"
+
+# list that contains the numbers of prefectures to survey
+region  = range(1, 48)
+
+# output filename
+filename = "20150928.csv"
+
+# Progress Output
+verbose = False
+#============================================================
+
+def verbose_output(text):
+    if verbose == True:
+        sys.stderr.write(text)
+
 def create_storedetail_filepath(storeid, directory):
     return "%s/store_%d.html" % (directory, storeid)
 
@@ -92,7 +127,6 @@ def parse_detailpage(detailpage_raw_data):
 
     return retval
 
-
 def extract_storeid(url):
     match = re.search(r'id=(\d*)', str(url) )
     if match is None:
@@ -105,15 +139,13 @@ def fetch_listpage(prefcode):
     html = urllib2.urlopen(url).read()
     return html
 
-def scraping_prefecture(listpage_raw_data, verbose = True):
+def scraping_prefecture(listpage_raw_data):
     store_list = list()
-    i = 1
-    #listpage_raw_data = fetch_listpage(prefcode)
     root = lxml.html.fromstring(listpage_raw_data)
     searchResult = root.xpath('//div[@class="detailContainer"]')
+    verbose_output("{0} stores found: ".format(len(searchResult))  )
     for storedata in searchResult:
         store_data = dict()
-
         storeurl = storedata.xpath('./div[@class="detailInfo"]/div[@class="storeSearchButtons"]/p[@class="searchButtonDetail"]/a')[0].attrib['href']
         store = storedata.xpath('./p[@class="storeName"]')[0].text
         address = storedata.xpath('./p[@class="storeAddress"]')[0].text
@@ -122,8 +154,8 @@ def scraping_prefecture(listpage_raw_data, verbose = True):
         store_data['store'] = store.encode('utf-8')
         store_data['address'] = address.encode('utf-8')
         store_list.append(store_data)
+    verbose_output("Done\n")
     return store_list
-
 
 def as_record(keys, store_data):
     retval = []
@@ -150,22 +182,6 @@ def as_record(keys, store_data):
         else:
             retval.append("")
     return retval;
-
-pref_id_dict = { 
-        1: "Hokkaido",  2: "Aomori",    3: "Iwate",     4: "Miyagi",    5: "Akita", 6: "Yamagata",  7: "Fukushima",
-        8: "Tokyo",     9: "Ibaraki",   10:"Gumma",    11:"Saitama",   12:"Chiba", 13:"Tokyo",     14:"Kanagawa",
-        15:"Niigata",   16:"Toyama",    17:"Ishikawa",  18:"Fukui",     19:"Yamanashi", 20: "Nagano",  
-        21:"Gifu",      22:"Sizuoka",   23:"Aichi",     24:"Mie",   
-        25:"Shiga",     26:"Kyoto",     27:"Osaka",     28:"Hyogo",     29:"Nara",  30:"Wakayama",
-        31:"Tottori",   32:"Shimane",   33:"Okayama",   34:"Hiroshima", 35:"Yamaguchi",
-        36:"Tokushima", 37:"Kagawa",    38:"Ehime",     39:"Kochi",     
-        40:"Fukuoka",   41:"Saga",      42:"Nagasaki",  43:"Kumamoto",  44:"Oita",  45:"Miyazaki",  46:"Kagoshima", 47:"Okinawa"
-        }
-
-
-prefid = 13 # Tokyo
-savedir = "starbucks"
-
 
 def load_or_fetch_storelist(prefid, directory, load = True, save = True) :
     listfilepath = create_storelist_filepath(prefid, directory)
@@ -197,7 +213,6 @@ def load_or_fetch_storedetail(storeid, directory, load = True, save = True):
             f.close()
         return detail_html
 
-
 def survey_prefecture(prefid, savedir, list_load = False, list_save = True, store_load = True, store_save = True):
     storelist_html = load_or_fetch_storelist(prefid, savedir, list_load, list_save)
     data = scraping_prefecture(storelist_html)
@@ -206,17 +221,27 @@ def survey_prefecture(prefid, savedir, list_load = False, list_save = True, stor
         i.update( parse_detailpage(detail_html) )
     return data
 
-filename = "AllJapan.csv"
+def check_region_parameter(region_list):
+    fst = True
+    verbose_output("Surbey: ")
+    for i in region_list:
+        if not i in range(1,48):
+            raise ValueError
+        else:
+            if fst == False:
+                verbose_output("/")
+            verbose_output("{0}".format(pref_id_dict[i]) )
+            fst = False
+    verbose_output("\n")
+
+check_region_parameter(region)
 data = []
-for i in range(1,48):
-    print "%s"% pref_id_dict[i]
+for i in region:
+    verbose_output( "{0}({1}): ".format(i, pref_id_dict[i]) )
     previous_length = len(data)
-    data += survey_prefecture(i, savedir)
-    print "%s: %d stores Done." % (pref_id_dict[i], len(data) - previous_length)
+    data += survey_prefecture(i, savedir, load_list_cache, save_list_cache, load_storedetail_cache, save_storedetail_cache)
 
-print "Scraping Donw. Next, write as CSV"
-
-
+verbose_output( "Scraping Done. Next, write as CSV({0})\n".format(filename) )
 f = open(filename, 'w')
 writer = csv.writer(f)
 writer.writerow(['店名', 'id', '月曜日〜木曜日開店時間', '金曜日開店時間', '土曜日開店時間', '日曜日開店時間', '電話番号', '無線LAN'] )
